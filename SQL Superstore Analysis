@@ -1,0 +1,53 @@
+ALTER TABLE Superstore_test
+ADD COLUMN next_sales ;
+
+UPDATE Superstore_test
+SET next_sales = subquery.next_sales
+FROM (
+  SELECT order_id, sales, LEAD(sales) OVER (ORDER BY ROWID) AS next_sales
+  FROM Superstore_test
+  ) AS subquery
+WHERE subquery.sales = Superstore_test.sales
+;
+
+SELECT sales, next_sales
+FROM Superstore_test;
+
+ALTER TABLE Superstore_test
+ADD COLUMN prev_sales;
+
+UPDATE Superstore_test
+SET prev_sales = subquery.prev_sales
+FROM (
+SELECT order_id, sales, LAG(sales) OVER (ORDER BY ROWID) as prev_sales
+FROM Superstore_test) subquery
+WHERE subquery.sales = Superstore_test.sales;
+
+SELECT sales, prev_sales FROM Superstore_test;
+
+UPDATE Superstore_test
+SET sales = ROUND(sales, 2);
+
+SELECT order_id, sales, RANK() OVER (ORDER BY sales desc) as rank
+FROM Superstore_test;
+
+SELECT order_date, sales, RANK() OVER (ORDER BY sales desc) as rank
+FROM superstore_test
+GROUP BY order_date ;
+
+SELECT strftime('%m', order_date) AS month, AVG(sales) AS avg_sale
+FROM Superstore_test
+GROUP BY month
+ORDER BY avg_sale DESC;
+
+SELECT strftime('%m', order_date) AS month, sub.product_id AS biggest_prod, MAX(sub.one_prod) as num_sold
+FROM (
+SELECT order_date, product_id, COUNT(product_id) as one_prod
+FROM Superstore_test
+GROUP BY product_id) as sub
+group by month;
+
+SELECT strftime('%m', order_date) AS month, sales, ROUND(AVG(sales) OVER (PARTITION BY strftime('%m', order_date) ORDER BY order_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ), 2) AS moving_avg_sales
+FROM superstore_test
+ORDER BY order_date;
